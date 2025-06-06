@@ -49,7 +49,6 @@
       padding: 18px 20px;
       border-radius: 15px;
       box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
-      transition: background-color 0.4s ease;
     }
     input[type="text"] {
       padding: 12px 15px;
@@ -59,7 +58,7 @@
       border-radius: 8px;
       background-color: #2a2a2a;
       color: #fff;
-      transition: background 0.3s, color 0.3s;
+      transition: background 0.3s;
     }
     input[type="text"]:focus {
       outline: none;
@@ -75,7 +74,6 @@
       background: #222;
       color: #fff;
       border: none;
-      transition: background 0.3s, color 0.3s;
     }
     .bg-btn {
       position: absolute;
@@ -118,7 +116,6 @@
       </select>
     </div>
   </div>
-
   <script>
     const queryInput = document.getElementById('query');
     const engineSelect = document.getElementById('engine');
@@ -156,7 +153,7 @@
         url = engines[engine] + encodeURIComponent(q);
       }
       window.open(url, '_blank');
-      queryInput.value = '';
+      queryInput.value = ''; // Очистка после поиска
     }
 
     queryInput.addEventListener('keydown', function(e) {
@@ -185,15 +182,8 @@
       if (file) {
         const reader = new FileReader();
         reader.onload = function (event) {
-          const bgUrl = event.target.result;
-          document.body.style.backgroundImage = `url(${bgUrl})`;
-          localStorage.setItem('background', bgUrl);
-
-          const img = new Image();
-          img.src = bgUrl;
-          getAverageColor(img, (avg) => {
-            updateSearchBarStyle(avg);
-          });
+          document.body.style.backgroundImage = url(${event.target.result});
+          localStorage.setItem('background', event.target.result);
         };
         reader.readAsDataURL(file);
       }
@@ -201,19 +191,14 @@
 
     const savedBg = localStorage.getItem('background');
     if (savedBg) {
-      document.body.style.backgroundImage = `url(${savedBg})`;
-      const img = new Image();
-      img.src = savedBg;
-      getAverageColor(img, (avg) => {
-        updateSearchBarStyle(avg);
-      });
+      document.body.style.backgroundImage = url(${savedBg});
     }
 
     const status = document.getElementById('status');
     function updateConnectionInfo() {
       const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
       if (connection) {
-        status.textContent = `Тип: ${connection.effectiveType.toUpperCase()}, скорость: ${connection.downlink} Мбит/с`;
+        status.textContent = Тип: ${connection.effectiveType.toUpperCase()}, скорость: ${connection.downlink} Мбит/с;
       } else {
         status.textContent = 'Информация о соединении недоступна';
       }
@@ -223,63 +208,6 @@
       navigator.connection.addEventListener('change', updateConnectionInfo);
     }
     updateConnectionInfo();
-
-    // ===== Цветовая адаптация =====
-
-    function getAverageColor(imgElement, callback) {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      imgElement.crossOrigin = 'Anonymous';
-
-      imgElement.onload = () => {
-        canvas.width = imgElement.width;
-        canvas.height = imgElement.height;
-        ctx.drawImage(imgElement, 0, 0);
-
-        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-
-        let r = 0, g = 0, b = 0, count = 0;
-
-        for (let i = 0; i < data.length; i += 4) {
-          r += data[i];
-          g += data[i + 1];
-          b += data[i + 2];
-          count++;
-        }
-
-        r = Math.floor(r / count);
-        g = Math.floor(g / count);
-        b = Math.floor(b / count);
-
-        callback({ r, g, b });
-      };
-    }
-
-    function getBrightness({ r, g, b }) {
-      return (r * 299 + g * 587 + b * 114) / 1000;
-    }
-
-    function updateSearchBarStyle({ r, g, b }) {
-      const brightness = getBrightness({ r, g, b });
-
-      const bg = `rgba(${r}, ${g}, ${b}, 0.25)`;
-      const textColor = brightness > 130 ? '#000' : '#fff';
-      const placeholderColor = brightness > 130 ? '#333' : '#ccc';
-
-      const searchBar = document.querySelector('.search-bar');
-      const input = document.querySelector('input[type="text"]');
-      const select = document.querySelector('select');
-
-      searchBar.style.backgroundColor = bg;
-      input.style.color = textColor;
-      select.style.color = textColor;
-
-      input.style.backgroundColor = 'transparent';
-      select.style.backgroundColor = 'transparent';
-
-      input.style.border = '1px solid rgba(255,255,255,0.2)';
-      input.style::placeholder = placeholderColor; // не работает напрямую, только через CSS
-    }
   </script>
 </body>
 </html>
