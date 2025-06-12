@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Поисковая страница</title>
-  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><text x='50%' y='50%' font-size='50' dominant-baseline='middle' text-anchor='middle'>💫</text></svg>" />
+  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><text x='50%' y='50%' font-size='50' dominant-baseline='middle' text-anchor='middle'>💫</text></svg>">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@threejs/loaders/GLTFLoader.js"></script>
   <style>
     body {
       margin: 0;
@@ -13,6 +15,28 @@
       color: #fff;
       background-size: cover;
       background-position: center;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    #model-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+    }
+    #video-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -2;
     }
     .overlay {
       position: fixed;
@@ -27,8 +51,6 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      height: 100vh;
       text-align: center;
       position: relative;
     }
@@ -59,18 +81,17 @@
       font-size: 1.1rem;
       border: 1px solid rgba(255, 255, 255, 0.3);
       border-radius: 8px;
-      background-color: rgba(0,0,0,0.2);
+      background-color: rgba(0, 0, 0, 0.2);
       color: #fff;
       transition: background 0.3s, border 0.3s;
       backdrop-filter: blur(4px);
-      user-select: text;
     }
     input[type="text"] {
       width: 400px;
     }
     input[type="text"]:focus, select:focus {
       outline: none;
-      background-color: rgba(255,255,255,0.05);
+      background-color: rgba(255, 255, 255, 0.05);
       border-color: rgba(255, 255, 255, 0.5);
     }
     input[type="text"]::placeholder {
@@ -84,9 +105,6 @@
       position: fixed;
       bottom: 20px;
       right: 20px;
-      width: 140px;
-      display: flex;
-      justify-content: space-between;
       z-index: 10;
     }
     .bottom-buttons button {
@@ -102,7 +120,6 @@
       align-items: center;
       justify-content: center;
       transition: background 0.3s, border-color 0.3s, color 0.3s;
-      user-select: none;
       opacity: 0.7;
     }
     .bottom-buttons button:hover {
@@ -118,24 +135,23 @@
         gap: 8px;
         max-width: 90%;
       }
-      input[type="text"] {
-        width: 100%;
-      }
-      select {
+      input[type="text"], select {
         width: 100%;
       }
     }
   </style>
 </head>
 <body>
+  <video id="video-bg" autoplay loop muted playsinline hidden></video>
+  <canvas id="model-canvas" hidden></canvas>
   <div class="overlay" id="overlay"></div>
-  <input type="file" id="bg-upload" accept="image/*" />
+  <input type="file" id="bg-upload" accept="image/*,video/*,.glb,.gltf">
 
   <div class="container">
     <div class="clock" id="clock"></div>
     <div class="status" id="status">Проверка подключения...</div>
     <div class="search-bar">
-      <input type="text" id="query" placeholder="Введите запрос..." autocomplete="off" spellcheck="false" maxlength="200" />
+      <input type="text" id="query" placeholder="Введите запрос (например, yt или yt @Kayoosh)" autocomplete="off" spellcheck="false" maxlength="200">
       <select id="engine">
         <option value="google">Google</option>
         <option value="bing">Bing</option>
@@ -145,16 +161,23 @@
   </div>
 
   <div class="bottom-buttons">
-    <button class="apps-btn" title="Приложения" onclick="window.open('apps.html', '_blank')">📱</button>
-    <button class="wall-btn" title="Сменить обои" onclick="document.getElementById('bg-upload').click()">🖼️</button>
-    <button class="faq-btn" title="FAQ" onclick="window.open('faq.html', '_blank')">❓</button>
+    <button class="wall-btn" title="Загрузить обои" onclick="document.getElementById('bg-upload').click()">🖼️</button>
   </div>
 
-  <script>
+  <script type="module">
+    import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/@threejs/loaders/GLTFLoader.js';
+
     const queryInput = document.getElementById('query');
     const engineSelect = document.getElementById('engine');
-
     const clock = document.getElementById('clock');
+    const status = document.getElementById('status');
+    const bgUpload = document.getElementById('bg-upload');
+    const videoBg = document.getElementById('video-bg');
+    const modelCanvas = document.getElementById('model-canvas');
+
+    let scene, camera, renderer, model;
+
+    // Update clock
     function updateClock() {
       const now = new Date();
       clock.textContent = now.toLocaleTimeString('ru-RU');
@@ -162,26 +185,48 @@
     }
     updateClock();
 
+    // Connection status
+    function updateConnectionInfo() {
+      const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      status.textContent = connection
+        ? `Тип: ${connection.effectiveType.toUpperCase()}, скорость: ${connection.downlink} Мбит/с`
+        : 'Сеть недоступна';
+    }
+    if ('connection' in navigator && navigator.connection) {
+      navigator.connection.addEventListener('change', updateConnectionInfo);
+    }
+    updateConnectionInfo();
+
+    // Search shortcuts
     const shortcuts = {
       yt: 'https://www.youtube.com/results?search_query=',
-      pin: 'https://www.pinterest.com/search/pins/?q=',
-      gp: 'https://chat.openai.com/?q=',
-      gt: 'https://github.com/search?q='
+      gpt: 'https://chat.openai.com/?q=',
+      gro: 'https://x.ai/?s=',
+      git: 'https://github.com/search?q=',
+      yts: 'https://studio.youtube.com/channel/',
+      mi: 'https://miro.com/search/?q=',
+      q32: 'https://q32.link/office/?q='
     };
 
+    // Search engines
     const engines = {
       google: 'https://www.google.com/search?q=',
       bing: 'https://www.bing.com/search?q=',
       yandex: 'https://yandex.ru/search/?text='
     };
 
+    // Handle search
     function search() {
       let q = queryInput.value.trim();
       if (!q) return;
       let url;
       const [prefix, ...rest] = q.split(' ');
       if (shortcuts[prefix]) {
-        url = shortcuts[prefix] + encodeURIComponent(rest.join(' '));
+        if (prefix === 'yts' && rest.length === 0) {
+          url = shortcuts[prefix]; // YouTube Studio without query
+        } else {
+          url = shortcuts[prefix] + encodeURIComponent(rest.join(' '));
+        }
       } else {
         const engine = engineSelect.value;
         url = engines[engine] + encodeURIComponent(q);
@@ -190,62 +235,121 @@
       queryInput.value = '';
     }
 
-    queryInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        search();
-      }
+    queryInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') search();
     });
 
+    // Auto-focus input on load
     window.addEventListener('load', () => {
       queryInput.focus();
     });
 
+    // Save and load settings
     function saveSettings() {
       localStorage.setItem('engine', engineSelect.value);
     }
-
     function loadSettings() {
       const savedEngine = localStorage.getItem('engine');
       if (savedEngine) engineSelect.value = savedEngine;
     }
-
     engineSelect.addEventListener('change', saveSettings);
     loadSettings();
 
-    const bgUpload = document.getElementById('bg-upload');
-    const overlay = document.getElementById('overlay');
+    // Clear background
+    function clearBackground() {
+      document.body.style.backgroundImage = 'none';
+      document.body.style.backgroundColor = '#111';
+      videoBg.hidden = true;
+      videoBg.src = '';
+      modelCanvas.hidden = true;
+      if (renderer) {
+        renderer.dispose();
+        scene = null;
+        camera = null;
+        renderer = null;
+        model = null;
+      }
+    }
 
+    // Setup 3D model rendering
+    function setupModel(url) {
+      clearBackground();
+      modelCanvas.hidden = false;
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      renderer = new THREE.WebGLRenderer({ canvas: modelCanvas, alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      const light = new THREE.DirectionalLight(0xffffff, 0.8);
+      light.position.set(1, 1, 1);
+      scene.add(light);
+      scene.add(new THREE.AmbientLight(0x404040));
+
+      const loader = new GLTFLoader();
+      loader.load(url, (gltf) => {
+        model = gltf.scene;
+        scene.add(model);
+        model.position.set(0, 0, 0);
+        camera.position.z = 5;
+
+        function animate() {
+          requestAnimationFrame(animate);
+          if (model) model.rotation.y += 0.01;
+          renderer.render(scene, camera);
+        }
+        animate();
+      });
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    }
+
+    // Handle wallpaper upload
     bgUpload.addEventListener('change', (e) => {
       const file = e.target.files[0];
-      if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = function (event) {
-          document.body.style.backgroundImage = `url(${event.target.result})`;
-          localStorage.setItem('background', event.target.result);
-        };
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        const url = event.target.result;
+
+        if (file.type.startsWith('image/')) {
+          clearBackground();
+          document.body.style.backgroundImage = `url(${url})`;
+          localStorage.setItem('background', url);
+          localStorage.setItem('backgroundType', 'image');
+        } else if (file.type.startsWith('video/')) {
+          clearBackground();
+          videoBg.src = url;
+          videoBg.hidden = false;
+          videoBg.play().catch(() => {});
+          localStorage.setItem('backgroundType', 'video');
+        } else if (file.name.endsWith('.glb') || file.name.endsWith('.gltf')) {
+          setupModel(url);
+          localStorage.setItem('backgroundType', 'model');
+        } else {
+          alert('Неподдерживаемый формат файла!');
+        }
+      };
+
+      if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
         reader.readAsDataURL(file);
-      } else {
-        alert('Пожалуйста, выберите изображение!');
+      } else if (file.name.endsWith('.glb') || file.name.endsWith('.gltf')) {
+        reader.readAsDataURL(file);
       }
     });
 
+    // Load saved background
     const savedBg = localStorage.getItem('background');
-    if (savedBg) {
+    const bgType = localStorage.getItem('backgroundType');
+    if (savedBg && bgType === 'image') {
+      clearBackground();
       document.body.style.backgroundImage = `url(${savedBg})`;
     }
-
-    const status = document.getElementById('status');
-    function updateConnectionInfo() {
-      const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-      status.textContent = connection
-        ? `Тип: ${connection.effectiveType.toUpperCase()}, скорость: ${connection.downlink} Мбит/с`
-        : '';
-    }
-
-    if ('connection' in navigator && navigator.connection) {
-      navigator.connection.addEventListener('change', updateConnectionInfo);
-    }
-    updateConnectionInfo();
   </script>
 </body>
 </html>
