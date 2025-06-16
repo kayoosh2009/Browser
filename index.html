@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="ru">
+<!DOCTYPE html>
+<html lang="ru">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -90,177 +91,267 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+      transition: opacity 0.3s ease-in-out;
     }
-    .floating-buttons {
+    .engine-icon img.changing {
+      opacity: 0;
+    }
+    .fab {
       position: fixed;
-      bottom: 30px;
-      right: 30px;
+      right: 20px;
+      bottom: 20px;
       display: flex;
-      flex-direction: column;
+      flex-direction: column-reverse;
       gap: 15px;
       z-index: 3;
     }
-    .circle-btn {
+    .fab button {
       width: 50px;
       height: 50px;
       border-radius: 50%;
       border: none;
       background-color: rgba(255,255,255,0.2);
       color: white;
-      font-size: 24px;
+      font-size: 1.5rem;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(5px);
     }
-    #settingsPanel {
+    .settings-modal {
       position: fixed;
-      bottom: 100px;
-      right: 30px;
-      background: rgba(0, 0, 0, 0.8);
+      right: 50%;
+      bottom: 50%;
+      transform: translate(50%, 50%);
+      background: rgba(0,0,0,0.9);
       padding: 20px;
-      border-radius: 15px;
+      border-radius: 12px;
       display: none;
       flex-direction: column;
-      gap: 10px;
-      z-index: 4;
+      gap: 15px;
+      z-index: 5;
+    }
+    .settings-modal.active {
+      display: flex;
+    }
+    .settings-modal label {
       color: white;
+      font-size: 0.9rem;
     }
-    input[type="range"] {
-      width: 150px;
-    }
-    @media (max-width: 600px) {
-      .search-container {
-        width: 95%;
-        padding: 15px;
-      }
-      .clock {
-        font-size: 2rem;
-      }
-      .quote {
-        font-size: 0.6rem;
-      }
+    .side-menu, .menu-toggle {
+      display: none;
     }
   </style>
 </head>
 <body>
   <div class="clock" id="clock">Загрузка времени...</div>
-  <div class="quote" id="quote">Загрузка цитаты...</div>  <div class="search-container">
+  <div class="quote" id="quote">Загрузка цитаты...</div>
+
+  <div class="search-container">
     <form class="search-bar" id="searchForm">
       <input type="text" id="searchInput" placeholder="Введите запрос..." autocomplete="off" />
-      <div class="engine-icon" id="engineCycle">
-        <img id="engineIcon" src="https://www.google.com/favicon.ico" alt="engine" />
+      <div class="engine-icon" id="engineCycle" role="button" aria-label="Переключить поисковую систему" tabindex="0">
+        <img id="engineIcon" src="https://www.google.com/favicon.ico" alt="Иконка поисковой системы" />
       </div>
     </form>
-  </div>  <div class="floating-buttons">
-    <button class="circle-btn" id="settingsBtn">⚙</button>
-    <button class="circle-btn" id="bgUploadBtn">+</button>
-    <input type="file" id="bgInput" accept="image/*,video/*" style="display: none;" />
-  </div>  <div id="settingsPanel">
-    <label>Затемнение:</label>
-    <input type="range" id="darknessSlider" min="0" max="1" step="0.1">
-    <label><input type="checkbox" id="openInNewTab"> Открывать в новой вкладке</label>
-  </div>  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const clock = document.getElementById("clock");
-      setInterval(() => {
-        clock.textContent = new Date().toLocaleTimeString();
-      }, 1000);
+  </div>
 
-      const quotes = [
-        "Мечтай.", "Будь собой.", "Шанс каждый день.", "Начни с малого.", "Будь смелым.",
-        "Действуй.", "Верь в себя.", "Начни.", "Ты важен.", "Будь добрым.", "Люби жизнь."
-      ];
-      document.getElementById("quote").textContent = quotes[Math.floor(Math.random() * quotes.length)];
+  <div class="fab">
+    <button id="settingsBtn" aria-label="Открыть настройки">⚙️</button>
+    <button id="wallpaperBtn" aria-label="Изменить фон">🖼️</button>
+  </div>
 
-      const engines = [
-        { name: "Google", url: "https://www.google.com/search?q=", icon: "https://www.google.com/favicon.ico" },
-        { name: "Bing", url: "https://www.bing.com/search?q=", icon: "https://www.bing.com/favicon.ico" },
-        { name: "Яндекс", url: "https://yandex.ru/search/?text=", icon: "https://yandex.ru/favicon.ico" },
-        { name: "DuckDuckGo", url: "https://duckduckgo.com/?q=", icon: "https://duckduckgo.com/favicon.ico" }
-      ];
-      let currentEngine = parseInt(localStorage.getItem('searchEngine')) || 0;
-      const engineIcon = document.getElementById("engineIcon");
-      engineIcon.src = engines[currentEngine].icon;
+  <div class="settings-modal" id="settingsModal">
+    <label><input type="checkbox" id="openNewTab" checked /> Открывать в новой вкладке</label>
+  </div>
 
-      document.getElementById("engineCycle").addEventListener("click", () => {
-        currentEngine = (currentEngine + 1) % engines.length;
+  <input type="file" id="bg-input" accept="image/jpeg,image/png,video/mp4,video/webm" style="display:none" />
+
+  <script>
+    const clockEl = document.getElementById("clock");
+    const quoteEl = document.getElementById("quote");
+    const settingsBtn = document.getElementById("settingsBtn");
+    const settingsModal = document.getElementById("settingsModal");
+    const wallpaperBtn = document.getElementById("wallpaperBtn");
+    const bgInput = document.getElementById("bg-input");
+    const openNewTab = document.getElementById("openNewTab");
+    const searchInput = document.getElementById("searchInput");
+    const searchForm = document.getElementById("searchForm");
+    const engineIcon = document.getElementById("engineIcon");
+    const engineCycle = document.getElementById("engineCycle");
+    let inactivityTimeout;
+
+    const engines = [
+      { name: "Google", url: "https://www.google.com/search?q=", icon: "https://www.google.com/favicon.ico" },
+      { name: "Bing", url: "https://www.bing.com/search?q=", icon: "https://www.bing.com/favicon.ico" },
+      { name: "Яндекс", url: "https://yandex.ru/search/?text=", icon: "https://yandex.ru/favicon.ico" },
+      { name: "DuckDuckGo", url: "https://duckduckgo.com/?q=", icon: "https://duckduckgo.com/favicon.ico" }
+    ];
+
+    function getFromLocalStorage(key, defaultValue) {
+      try {
+        return localStorage.getItem(key) || defaultValue;
+      } catch (e) {
+        console.warn("localStorage недоступен:", e);
+        return defaultValue;
+      }
+    }
+
+    function setToLocalStorage(key, value) {
+      try {
+        localStorage.setItem(key, value);
+      } catch (e) {
+        console.warn("Не удалось сохранить в localStorage:", e);
+      }
+    }
+
+    let currentEngine = parseInt(getFromLocalStorage("engineIndex", 0));
+    engineIcon.src = engines[currentEngine].icon;
+
+    function cycleEngine() {
+      engineIcon.classList.add("changing");
+      currentEngine = (currentEngine + 1) % engines.length;
+      setTimeout(() => {
         engineIcon.src = engines[currentEngine].icon;
-        localStorage.setItem('searchEngine', currentEngine);
-      });
+        engineIcon.classList.remove("changing");
+      }, 300);
+      setToLocalStorage("engineIndex", currentEngine);
+    }
 
-      const searchForm = document.getElementById("searchForm");
-      searchForm.addEventListener("submit", e => {
+    engineCycle.addEventListener("click", cycleEngine);
+    engineCycle.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        const query = document.getElementById("searchInput").value.trim();
-        if (query) {
-          const newTab = document.getElementById("openInNewTab").checked;
-          const url = engines[currentEngine].url + encodeURIComponent(query);
-          window.open(url, newTab ? '_blank' : '_self');
-          document.getElementById("searchInput").value = '';
-        }
+        cycleEngine();
+      }
+    });
+
+    function updateClock() {
+      clockEl.textContent = new Date().toLocaleTimeString();
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    const quotes = [
+      "Мечтай.", "Будь собой.", "Шанс каждый день.", "Меняйся.", "Начни с малого.",
+      "Будь смелым.", "Действуй.", "Верь в себя.", "Начни.", "Ты важен.",
+      "Стань лучше.", "Будь добрым.", "Люби жизнь.", "Рискуй.", "Найди путь."
+    ];
+    quoteEl.textContent = quotes[Math.floor(Math.random() * quotes.length)];
+
+    function setupVideo(video, src) {
+      video.src = src;
+      video.play().catch((e) => {
+        console.warn("Не удалось автоматически воспроизвести видео:", e);
       });
+    }
 
-      const settingsBtn = document.getElementById("settingsBtn");
-      const settingsPanel = document.getElementById("settingsPanel");
-      settingsBtn.addEventListener("click", () => {
-        settingsPanel.style.display = settingsPanel.style.display === 'flex' ? 'none' : 'flex';
-      });
+    wallpaperBtn.addEventListener("click", () => bgInput.click());
 
-      const darknessSlider = document.getElementById("darknessSlider");
-      const openInNewTab = document.getElementById("openInNewTab");
+    bgInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
 
-      darknessSlider.value = localStorage.getItem('darkness') || 0.5;
-      openInNewTab.checked = localStorage.getItem('newTab') === 'true';
-
-      function updateDarkness(value) {
-        document.body.style.setProperty('--darkness', value);
-        document.body.style.setProperty('--overlay', `rgba(0,0,0,${value})`);
-        document.querySelector('body::before').style.background = `rgba(0,0,0,${value})`;
+      const validImageTypes = ["image/jpeg", "image/png"];
+      const validVideoTypes = ["video/mp4", "video/webm"];
+      if (!validImageTypes.includes(file.type) && !validVideoTypes.includes(file.type)) {
+        alert("Пожалуйста, выберите файл в формате JPEG, PNG, MP4 или WebM.");
+        bgInput.value = "";
+        return;
       }
 
-      updateDarkness(darknessSlider.value);
-      darknessSlider.addEventListener("input", e => {
-        localStorage.setItem('darkness', e.target.value);
-        updateDarkness(e.target.value);
-      });
-
-      openInNewTab.addEventListener("change", e => {
-        localStorage.setItem('newTab', e.target.checked);
-      });
-
-      document.getElementById("bgUploadBtn").addEventListener("click", () => {
-        document.getElementById("bgInput").click();
-      });
-
-      document.getElementById("bgInput").addEventListener("change", function(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          if (file.type.startsWith("video")) {
-            document.body.style.backgroundImage = '';
-            const video = document.createElement('video');
-            video.src = e.target.result;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64Data = reader.result;
+        if (file.type.startsWith("video")) {
+          document.body.style.backgroundImage = "none";
+          let video = document.querySelector("#bg-video");
+          if (!video) {
+            video = document.createElement("video");
+            video.id = "bg-video";
             video.autoplay = true;
             video.loop = true;
             video.muted = true;
-            video.playsInline = true;
-            video.style.position = 'fixed';
+            video.style.position = "fixed";
             video.style.top = 0;
             video.style.left = 0;
-            video.style.width = '100%';
-            video.style.height = '100%';
-            video.style.objectFit = 'cover';
-            video.style.zIndex = '-1';
+            video.style.width = "100%";
+            video.style.height = "100%";
+            video.style.objectFit = "cover";
+            video.style.zIndex = "-1";
             document.body.appendChild(video);
-          } else {
-            document.body.style.backgroundImage = `url(${e.target.result})`;
           }
-        };
-        reader.readAsDataURL(file);
-      });
+          setupVideo(video, base64Data);
+        } else {
+          document.body.style.backgroundImage = `url(${base64Data})`;
+          const existing = document.querySelector("#bg-video");
+          if (existing) existing.remove();
+        }
+        setToLocalStorage("wallpaper", base64Data);
+        setToLocalStorage("wallpaperType", file.type);
+        bgInput.value = "";
+      };
+      reader.readAsDataURL(file);
     });
-  </script></body>
+
+    settingsBtn.addEventListener("click", () => {
+      settingsModal.classList.toggle("active");
+      if (settingsModal.classList.contains("active")) {
+        resetInactivityTimeout();
+      } else {
+        clearTimeout(inactivityTimeout);
+      }
+    });
+
+    function resetInactivityTimeout() {
+      clearTimeout(inactivityTimeout);
+      inactivityTimeout = setTimeout(() => {
+        settingsModal.classList.remove("active");
+      }, 10000);
+    }
+
+    settingsModal.addEventListener("mousemove", resetInactivityTimeout);
+    settingsModal.addEventListener("keydown", resetInactivityTimeout);
+
+    searchForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const query = searchInput.value.trim();
+      if (query) {
+        const target = engines[currentEngine].url + encodeURIComponent(query);
+        if (openNewTab.checked) {
+          window.open(target, "_blank");
+        } else {
+          window.location.href = target;
+        }
+        searchInput.value = "";
+      }
+    });
+
+    window.addEventListener("load", () => {
+      const wp = getFromLocalStorage("wallpaper", null);
+      const wpType = getFromLocalStorage("wallpaperType", null);
+      if (wp && wpType) {
+        if (wpType.startsWith("video")) {
+          const video = document.createElement("video");
+          video.id = "bg-video";
+          video.autoplay = true;
+          video.loop = true;
+          video.muted = true;
+          video.style.position = "fixed";
+          video.style.top = 0;
+          video.style.left = 0;
+          video.style.width = "100%";
+          video.style.height = "100%";
+          video.style.objectFit = "cover";
+          video.style.zIndex = "-1";
+          document.body.appendChild(video);
+          setupVideo(video, wp);
+        } else {
+          document.body.style.backgroundImage = `url(${wp})`;
+        }
+      }
+    });
+  </script>
+</body>
 </html>
