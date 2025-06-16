@@ -1,8 +1,4 @@
-
-  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><text x='50%' y='50%' font-size='50' dominant-baseline='middle' text-anchor='middle'>💫</text></svg>">
-
-<!DOCTYPE html>
-<html lang="ru">
+<!DOCTYPE html><html lang="ru">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -25,19 +21,32 @@
       align-items: center;
       justify-content: center;
       transition: background-image 0.5s ease-in-out;
+      position: relative;
+    }
+    body::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 0;
+      transition: background 0.3s;
     }
     .clock {
-      font-size: 3rem;
+      font-size: 3.2rem;
       color: white;
       font-weight: bold;
-      margin-bottom: 10px;
+      margin-bottom: 5px;
+      position: relative;
+      z-index: 1;
     }
     .quote {
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       color: #aaa;
-      margin-bottom: 20px;
-      max-width: 40%;
+      margin-bottom: 15px;
+      max-width: 30%;
       text-align: center;
+      position: relative;
+      z-index: 1;
     }
     .search-container {
       width: 60%;
@@ -49,6 +58,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      position: relative;
+      z-index: 1;
     }
     .search-bar {
       width: 100%;
@@ -80,10 +91,9 @@
       height: 100%;
       object-fit: cover;
     }
-    .bg-button {
+    .bg-button, .darken-button, .tab-toggle-button {
       position: fixed;
       right: 30px;
-      bottom: 30px;
       width: 50px;
       height: 50px;
       border-radius: 50%;
@@ -96,17 +106,33 @@
       color: white;
       font-size: 1.5rem;
       backdrop-filter: blur(5px);
+      z-index: 3;
+    }
+    .bg-button {
+      bottom: 30px;
+    }
+    .darken-button {
+      bottom: 90px;
+    }
+    .tab-toggle-button {
+      bottom: 150px;
     }
     .menu-toggle {
       position: fixed;
       top: 30px;
       right: 30px;
-      width: 30px;
-      height: 30px;
-      border-left: 4px solid white;
-      border-bottom: 4px solid white;
+      width: 20px;
+      height: 20px;
+      border-left: 3px solid white;
+      border-bottom: 3px solid white;
       transform: rotate(45deg);
       cursor: pointer;
+      transition: transform 0.3s, right 0.3s;
+      z-index: 3;
+    }
+    .menu-toggle.open {
+      transform: rotate(-135deg);
+      right: 280px;
     }
     .side-menu {
       position: fixed;
@@ -120,6 +146,7 @@
       display: flex;
       flex-direction: column;
       padding-top: 80px;
+      z-index: 2;
     }
     .side-menu a {
       padding: 10px 30px;
@@ -130,6 +157,15 @@
     .side-menu a:hover {
       background-color: rgba(255, 255, 255, 0.1);
     }
+    video.bg-video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      min-width: 100%;
+      min-height: 100%;
+      object-fit: cover;
+      z-index: -1;
+    }
   </style>
 </head>
 <body>
@@ -139,49 +175,42 @@
     <a href="#">Почта</a>
     <a href="#">Новости</a>
     <a href="#">Карта</a>
-  </div>
-
-  <div class="clock" id="clock">Загрузка времени...</div>
-  <div class="quote" id="quote">Загрузка цитаты...</div>
-
-  <div class="search-container">
-    <form class="search-bar" id="searchForm">
-      <input type="text" id="searchInput" placeholder="Введите запрос..." />
+  </div>  <div class="clock" id="clock">Загрузка времени...</div>
+  <div class="quote" id="quote">Загрузка цитаты...</div>  <div class="search-container">
+    <form class="search-bar" id="searchForm" autocomplete="off">
+      <input type="text" id="searchInput" placeholder="Введите запрос..." autocomplete="off" />
       <div class="engine-icon" id="engineCycle">
         <img id="engineIcon" src="https://www.google.com/favicon.ico" alt="engine" />
       </div>
     </form>
-  </div>
-
-  <label class="bg-button" for="bg-input">+</label>
-  <input type="file" id="bg-input" accept="image/*" style="display:none" />
+  </div><button class="tab-toggle-button" id="tabToggleBtn">↗</button> <button class="darken-button" id="darkenBtn">☼</button> <label class="bg-button" for="bg-input">+</label> <input type="file" id="bg-input" accept="image/*,video/*" style="display:none" />
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      const lang = navigator.language.startsWith('ru') ? 'ru' : 'en';
+      const darknessKey = 'darkness';
+      const bgTypeKey = 'bgType';
+      const bgDataKey = 'bgData';
+      const searchTargetKey = 'searchTarget';
+      const engineIndexKey = 'engineIndex';
+
+      let darkness = parseFloat(localStorage.getItem(darknessKey)) || 0.5;
+      let openInNewTab = localStorage.getItem(searchTargetKey) !== 'self';
+      let currentEngine = parseInt(localStorage.getItem(engineIndexKey)) || 0;
+
       function updateClock() {
         const now = new Date();
-        document.getElementById("clock").textContent = now.toLocaleTimeString();
+        const options = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+        document.getElementById("clock").textContent = now.toLocaleTimeString(lang, options);
       }
       setInterval(updateClock, 1000);
       updateClock();
 
-      const quotes = [
-        "Мечтай.", "Будь собой.", "Шанс каждый день.",
-        "Меняйся.", "Начни с малого.", "Будь смелым.",
-        "Действуй.", "Верь в себя.", "Начни.", "Ты важен."
-      ];
-      document.getElementById("quote").textContent = quotes[Math.floor(Math.random() * quotes.length)];
-
-      document.getElementById("bg-input").addEventListener("change", function(event) {
-        const file = event.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            document.body.style.backgroundImage = `url(${e.target.result})`;
-          };
-          reader.readAsDataURL(file);
-        }
-      });
+      const quotes = {
+        ru: ["Мечтай.", "Будь собой.", "Шанс каждый день.", "Меняйся.", "Начни с малого.", "Будь смелым.", "Действуй.", "Верь в себя.", "Начни.", "Ты важен.", "Стань лучше.", "Будь добрым.", "Люби жизнь.", "Рискуй.", "Найди путь."],
+        en: ["Dream.", "Be yourself.", "Take a chance.", "Change.", "Start small.", "Be brave.", "Act.", "Believe.", "Begin.", "You matter.", "Improve.", "Be kind.", "Love life.", "Take risks.", "Find a way."]
+      };
+      document.getElementById("quote").textContent = quotes[lang][Math.floor(Math.random() * quotes[lang].length)];
 
       const engines = [
         { name: "Google", url: "https://www.google.com/search?q=", icon: "https://www.google.com/favicon.ico" },
@@ -189,27 +218,104 @@
         { name: "Яндекс", url: "https://yandex.ru/search/?text=", icon: "https://yandex.ru/favicon.ico" },
         { name: "DuckDuckGo", url: "https://duckduckgo.com/?q=", icon: "https://duckduckgo.com/favicon.ico" }
       ];
-      let currentEngine = 0;
 
       const engineIcon = document.getElementById("engineIcon");
+      engineIcon.src = engines[currentEngine].icon;
       document.getElementById("engineCycle").addEventListener("click", () => {
         currentEngine = (currentEngine + 1) % engines.length;
         engineIcon.src = engines[currentEngine].icon;
+        localStorage.setItem(engineIndexKey, currentEngine);
       });
 
       document.getElementById("searchForm").addEventListener("submit", function(e) {
         e.preventDefault();
         const query = document.getElementById("searchInput").value.trim();
         if (query) {
-          window.open(engines[currentEngine].url + encodeURIComponent(query), "_blank");
+          const target = openInNewTab ? '_blank' : '_self';
+          window.open(engines[currentEngine].url + encodeURIComponent(query), target);
+          document.getElementById("searchInput").value = '';
         }
       });
 
+      const menuToggle = document.getElementById("menuToggle");
       const sideMenu = document.getElementById("sideMenu");
-      document.getElementById("menuToggle").addEventListener("click", () => {
-        sideMenu.style.width = sideMenu.style.width === "250px" ? "0" : "250px";
+      menuToggle.addEventListener("click", () => {
+        if (sideMenu.style.width === "250px") {
+          sideMenu.style.width = "0";
+          menuToggle.classList.remove("open");
+        } else {
+          sideMenu.style.width = "250px";
+          menuToggle.classList.add("open");
+        }
       });
+
+      const bgInput = document.getElementById("bg-input");
+      bgInput.addEventListener("change", function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const data = e.target.result;
+          if (file.type.startsWith('video')) {
+            document.body.style.backgroundImage = 'none';
+            let video = document.querySelector('video.bg-video');
+            if (!video) {
+              video = document.createElement('video');
+              video.className = 'bg-video';
+              video.autoplay = true;
+              video.loop = true;
+              video.muted = true;
+              document.body.appendChild(video);
+            }
+            video.src = data;
+            localStorage.setItem(bgTypeKey, 'video');
+          } else {
+            document.body.style.backgroundImage = `url(${data})`;
+            const existing = document.querySelector('video.bg-video');
+            if (existing) existing.remove();
+            localStorage.setItem(bgTypeKey, 'image');
+          }
+          localStorage.setItem(bgDataKey, data);
+        };
+        reader.readAsDataURL(file);
+      });
+
+      const darkenBtn = document.getElementById("darkenBtn");
+      function applyDarkness() {
+        document.body.style.setProperty('--darkness', darkness);
+        document.querySelector('body::before').style.background = `rgba(0,0,0,${darkness})`;
+      }
+      applyDarkness();
+      darkenBtn.addEventListener("click", () => {
+        darkness = darkness >= 0.8 ? 0.3 : darkness + 0.1;
+        applyDarkness();
+        localStorage.setItem(darknessKey, darkness);
+      });
+
+      const tabToggleBtn = document.getElementById("tabToggleBtn");
+      tabToggleBtn.addEventListener("click", () => {
+        openInNewTab = !openInNewTab;
+        tabToggleBtn.textContent = openInNewTab ? '↗' : '⟳';
+        localStorage.setItem(searchTargetKey, openInNewTab ? 'blank' : 'self');
+      });
+
+      // Load background from storage
+      const savedBg = localStorage.getItem(bgDataKey);
+      if (savedBg) {
+        const type = localStorage.getItem(bgTypeKey);
+        if (type === 'video') {
+          let video = document.createElement('video');
+          video.className = 'bg-video';
+          video.autoplay = true;
+          video.loop = true;
+          video.muted = true;
+          video.src = savedBg;
+          document.body.appendChild(video);
+        } else {
+          document.body.style.backgroundImage = `url(${savedBg})`;
+        }
+      }
     });
-  </script>
-</body>
+  </script></body>
 </html>
