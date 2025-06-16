@@ -49,7 +49,7 @@
       z-index: 1;
     }
     .search-container {
-      width: 60%;
+      width: 90%;
       max-width: 700px;
       backdrop-filter: blur(10px);
       background-color: rgba(255, 255, 255, 0.1);
@@ -91,126 +91,88 @@
       height: 100%;
       object-fit: cover;
     }
-    .bg-button, .darken-button, .tab-toggle-button {
+    .floating-buttons {
       position: fixed;
+      bottom: 30px;
       right: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      z-index: 3;
+    }
+    .circle-btn {
       width: 50px;
       height: 50px;
       border-radius: 50%;
-      border: 1px solid white;
-      background-color: rgba(255, 255, 255, 0.2);
-      cursor: pointer;
+      border: none;
+      background-color: rgba(255,255,255,0.2);
+      color: white;
+      font-size: 24px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
-      font-size: 1.5rem;
-      backdrop-filter: blur(5px);
-      z-index: 3;
-    }
-    .bg-button {
-      bottom: 30px;
-    }
-    .darken-button {
-      bottom: 90px;
-    }
-    .tab-toggle-button {
-      bottom: 150px;
-    }
-    .menu-toggle {
-      position: fixed;
-      top: 30px;
-      right: 30px;
-      width: 20px;
-      height: 20px;
-      border-left: 3px solid white;
-      border-bottom: 3px solid white;
-      transform: rotate(45deg);
       cursor: pointer;
-      transition: transform 0.3s, right 0.3s;
-      z-index: 3;
+      backdrop-filter: blur(10px);
     }
-    .menu-toggle.open {
-      transform: rotate(-135deg);
-      right: 280px;
-    }
-    .side-menu {
+    #settingsPanel {
       position: fixed;
-      right: 0;
-      top: 0;
-      height: 100%;
-      width: 0;
-      background-color: rgba(0, 0, 0, 0.8);
-      overflow-x: hidden;
-      transition: 0.3s;
-      display: flex;
+      bottom: 100px;
+      right: 30px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 20px;
+      border-radius: 15px;
+      display: none;
       flex-direction: column;
-      padding-top: 80px;
-      z-index: 2;
-    }
-    .side-menu a {
-      padding: 10px 30px;
+      gap: 10px;
+      z-index: 4;
       color: white;
-      text-decoration: none;
-      font-size: 1.2rem;
     }
-    .side-menu a:hover {
-      background-color: rgba(255, 255, 255, 0.1);
+    input[type="range"] {
+      width: 150px;
     }
-    video.bg-video {
-      position: fixed;
-      top: 0;
-      left: 0;
-      min-width: 100%;
-      min-height: 100%;
-      object-fit: cover;
-      z-index: -1;
+    @media (max-width: 600px) {
+      .search-container {
+        width: 95%;
+        padding: 15px;
+      }
+      .clock {
+        font-size: 2rem;
+      }
+      .quote {
+        font-size: 0.6rem;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="menu-toggle" id="menuToggle"></div>
-  <div class="side-menu" id="sideMenu">
-    <a href="#">Главная</a>
-    <a href="#">Почта</a>
-    <a href="#">Новости</a>
-    <a href="#">Карта</a>
-  </div>  <div class="clock" id="clock">Загрузка времени...</div>
+  <div class="clock" id="clock">Загрузка времени...</div>
   <div class="quote" id="quote">Загрузка цитаты...</div>  <div class="search-container">
-    <form class="search-bar" id="searchForm" autocomplete="off">
+    <form class="search-bar" id="searchForm">
       <input type="text" id="searchInput" placeholder="Введите запрос..." autocomplete="off" />
       <div class="engine-icon" id="engineCycle">
         <img id="engineIcon" src="https://www.google.com/favicon.ico" alt="engine" />
       </div>
     </form>
-  </div><button class="tab-toggle-button" id="tabToggleBtn">↗</button> <button class="darken-button" id="darkenBtn">☼</button> <label class="bg-button" for="bg-input">+</label> <input type="file" id="bg-input" accept="image/*,video/*" style="display:none" />
-
-  <script>
+  </div>  <div class="floating-buttons">
+    <button class="circle-btn" id="settingsBtn">⚙</button>
+    <button class="circle-btn" id="bgUploadBtn">+</button>
+    <input type="file" id="bgInput" accept="image/*,video/*" style="display: none;" />
+  </div>  <div id="settingsPanel">
+    <label>Затемнение:</label>
+    <input type="range" id="darknessSlider" min="0" max="1" step="0.1">
+    <label><input type="checkbox" id="openInNewTab"> Открывать в новой вкладке</label>
+  </div>  <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const lang = navigator.language.startsWith('ru') ? 'ru' : 'en';
-      const darknessKey = 'darkness';
-      const bgTypeKey = 'bgType';
-      const bgDataKey = 'bgData';
-      const searchTargetKey = 'searchTarget';
-      const engineIndexKey = 'engineIndex';
+      const clock = document.getElementById("clock");
+      setInterval(() => {
+        clock.textContent = new Date().toLocaleTimeString();
+      }, 1000);
 
-      let darkness = parseFloat(localStorage.getItem(darknessKey)) || 0.5;
-      let openInNewTab = localStorage.getItem(searchTargetKey) !== 'self';
-      let currentEngine = parseInt(localStorage.getItem(engineIndexKey)) || 0;
-
-      function updateClock() {
-        const now = new Date();
-        const options = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
-        document.getElementById("clock").textContent = now.toLocaleTimeString(lang, options);
-      }
-      setInterval(updateClock, 1000);
-      updateClock();
-
-      const quotes = {
-        ru: ["Мечтай.", "Будь собой.", "Шанс каждый день.", "Меняйся.", "Начни с малого.", "Будь смелым.", "Действуй.", "Верь в себя.", "Начни.", "Ты важен.", "Стань лучше.", "Будь добрым.", "Люби жизнь.", "Рискуй.", "Найди путь."],
-        en: ["Dream.", "Be yourself.", "Take a chance.", "Change.", "Start small.", "Be brave.", "Act.", "Believe.", "Begin.", "You matter.", "Improve.", "Be kind.", "Love life.", "Take risks.", "Find a way."]
-      };
-      document.getElementById("quote").textContent = quotes[lang][Math.floor(Math.random() * quotes[lang].length)];
+      const quotes = [
+        "Мечтай.", "Будь собой.", "Шанс каждый день.", "Начни с малого.", "Будь смелым.",
+        "Действуй.", "Верь в себя.", "Начни.", "Ты важен.", "Будь добрым.", "Люби жизнь."
+      ];
+      document.getElementById("quote").textContent = quotes[Math.floor(Math.random() * quotes.length)];
 
       const engines = [
         { name: "Google", url: "https://www.google.com/search?q=", icon: "https://www.google.com/favicon.ico" },
@@ -218,104 +180,87 @@
         { name: "Яндекс", url: "https://yandex.ru/search/?text=", icon: "https://yandex.ru/favicon.ico" },
         { name: "DuckDuckGo", url: "https://duckduckgo.com/?q=", icon: "https://duckduckgo.com/favicon.ico" }
       ];
-
+      let currentEngine = parseInt(localStorage.getItem('searchEngine')) || 0;
       const engineIcon = document.getElementById("engineIcon");
       engineIcon.src = engines[currentEngine].icon;
+
       document.getElementById("engineCycle").addEventListener("click", () => {
         currentEngine = (currentEngine + 1) % engines.length;
         engineIcon.src = engines[currentEngine].icon;
-        localStorage.setItem(engineIndexKey, currentEngine);
+        localStorage.setItem('searchEngine', currentEngine);
       });
 
-      document.getElementById("searchForm").addEventListener("submit", function(e) {
+      const searchForm = document.getElementById("searchForm");
+      searchForm.addEventListener("submit", e => {
         e.preventDefault();
         const query = document.getElementById("searchInput").value.trim();
         if (query) {
-          const target = openInNewTab ? '_blank' : '_self';
-          window.open(engines[currentEngine].url + encodeURIComponent(query), target);
+          const newTab = document.getElementById("openInNewTab").checked;
+          const url = engines[currentEngine].url + encodeURIComponent(query);
+          window.open(url, newTab ? '_blank' : '_self');
           document.getElementById("searchInput").value = '';
         }
       });
 
-      const menuToggle = document.getElementById("menuToggle");
-      const sideMenu = document.getElementById("sideMenu");
-      menuToggle.addEventListener("click", () => {
-        if (sideMenu.style.width === "250px") {
-          sideMenu.style.width = "0";
-          menuToggle.classList.remove("open");
-        } else {
-          sideMenu.style.width = "250px";
-          menuToggle.classList.add("open");
-        }
+      const settingsBtn = document.getElementById("settingsBtn");
+      const settingsPanel = document.getElementById("settingsPanel");
+      settingsBtn.addEventListener("click", () => {
+        settingsPanel.style.display = settingsPanel.style.display === 'flex' ? 'none' : 'flex';
       });
 
-      const bgInput = document.getElementById("bg-input");
-      bgInput.addEventListener("change", function(event) {
+      const darknessSlider = document.getElementById("darknessSlider");
+      const openInNewTab = document.getElementById("openInNewTab");
+
+      darknessSlider.value = localStorage.getItem('darkness') || 0.5;
+      openInNewTab.checked = localStorage.getItem('newTab') === 'true';
+
+      function updateDarkness(value) {
+        document.body.style.setProperty('--darkness', value);
+        document.body.style.setProperty('--overlay', `rgba(0,0,0,${value})`);
+        document.querySelector('body::before').style.background = `rgba(0,0,0,${value})`;
+      }
+
+      updateDarkness(darknessSlider.value);
+      darknessSlider.addEventListener("input", e => {
+        localStorage.setItem('darkness', e.target.value);
+        updateDarkness(e.target.value);
+      });
+
+      openInNewTab.addEventListener("change", e => {
+        localStorage.setItem('newTab', e.target.checked);
+      });
+
+      document.getElementById("bgUploadBtn").addEventListener("click", () => {
+        document.getElementById("bgInput").click();
+      });
+
+      document.getElementById("bgInput").addEventListener("change", function(event) {
         const file = event.target.files[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = function(e) {
-          const data = e.target.result;
-          if (file.type.startsWith('video')) {
-            document.body.style.backgroundImage = 'none';
-            let video = document.querySelector('video.bg-video');
-            if (!video) {
-              video = document.createElement('video');
-              video.className = 'bg-video';
-              video.autoplay = true;
-              video.loop = true;
-              video.muted = true;
-              document.body.appendChild(video);
-            }
-            video.src = data;
-            localStorage.setItem(bgTypeKey, 'video');
+          if (file.type.startsWith("video")) {
+            document.body.style.backgroundImage = '';
+            const video = document.createElement('video');
+            video.src = e.target.result;
+            video.autoplay = true;
+            video.loop = true;
+            video.muted = true;
+            video.playsInline = true;
+            video.style.position = 'fixed';
+            video.style.top = 0;
+            video.style.left = 0;
+            video.style.width = '100%';
+            video.style.height = '100%';
+            video.style.objectFit = 'cover';
+            video.style.zIndex = '-1';
+            document.body.appendChild(video);
           } else {
-            document.body.style.backgroundImage = `url(${data})`;
-            const existing = document.querySelector('video.bg-video');
-            if (existing) existing.remove();
-            localStorage.setItem(bgTypeKey, 'image');
+            document.body.style.backgroundImage = `url(${e.target.result})`;
           }
-          localStorage.setItem(bgDataKey, data);
         };
         reader.readAsDataURL(file);
       });
-
-      const darkenBtn = document.getElementById("darkenBtn");
-      function applyDarkness() {
-        document.body.style.setProperty('--darkness', darkness);
-        document.querySelector('body::before').style.background = `rgba(0,0,0,${darkness})`;
-      }
-      applyDarkness();
-      darkenBtn.addEventListener("click", () => {
-        darkness = darkness >= 0.8 ? 0.3 : darkness + 0.1;
-        applyDarkness();
-        localStorage.setItem(darknessKey, darkness);
-      });
-
-      const tabToggleBtn = document.getElementById("tabToggleBtn");
-      tabToggleBtn.addEventListener("click", () => {
-        openInNewTab = !openInNewTab;
-        tabToggleBtn.textContent = openInNewTab ? '↗' : '⟳';
-        localStorage.setItem(searchTargetKey, openInNewTab ? 'blank' : 'self');
-      });
-
-      // Load background from storage
-      const savedBg = localStorage.getItem(bgDataKey);
-      if (savedBg) {
-        const type = localStorage.getItem(bgTypeKey);
-        if (type === 'video') {
-          let video = document.createElement('video');
-          video.className = 'bg-video';
-          video.autoplay = true;
-          video.loop = true;
-          video.muted = true;
-          video.src = savedBg;
-          document.body.appendChild(video);
-        } else {
-          document.body.style.backgroundImage = `url(${savedBg})`;
-        }
-      }
     });
   </script></body>
 </html>
