@@ -668,9 +668,10 @@
     // Утилиты для работы с localStorage
     function getFromLocalStorage(key, defaultValue) {
       try {
-        return localStorage.getItem(key) ?? defaultValue;
+        const value = localStorage.getItem(key);
+        return value !== null ? JSON.parse(value) : defaultValue;
       } catch (e) {
-        console.warn("localStorage недоступен:", e);
+        console.warn(`Ошибка чтения ${key} из localStorage:`, e);
         return defaultValue;
       }
     }
@@ -679,7 +680,8 @@
       try {
         localStorage.setItem(key, JSON.stringify(value));
       } catch (e) {
-        console.warn("Не удалось сохранить в localStorage:", e);
+        console.warn(`Ошибка сохранения ${key} в localStorage:`, e);
+        alert("Не удалось сохранить настройки. Возможно, localStorage недоступен (например, в приватном режиме).");
       }
     }
 
@@ -864,14 +866,14 @@
       document.body.dataset.theme = savedTheme;
 
       // Установка цитат
-      const showQuotes = getFromLocalStorage("showQuotes", "true") === "true";
+      const showQuotes = getFromLocalStorage("showQuotes", true);
       elements.showQuotes.checked = showQuotes;
       const lang = getFromLocalStorage("quoteLanguage", "ru");
       elements.quoteLanguage.value = lang;
       setQuote();
 
       // Установка прозрачности фона
-      const opacity = getFromLocalStorage("bgOpacity", "0.5");
+      const opacity = getFromLocalStorage("bgOpacity", 0.5);
       document.documentElement.style.setProperty("--primary-bg-opacity", opacity);
       elements.bgOpacity.value = opacity;
 
@@ -883,56 +885,60 @@
       elements.customQuote.value = "";
 
       // Установка быстрых ссылок
-      const showLinks = getFromLocalStorage("showQuickLinks", "false") === "true";
+      const showLinks = getFromLocalStorage("showQuickLinks", false);
       elements.showQuickLinks.checked = showLinks;
       elements.quickLinks.classList.toggle("active", showLinks);
       updateQuickLinks();
 
       // Установка погоды
-      const showWeather = getFromLocalStorage("showWeather", "false") === "true";
+      const showWeather = getFromLocalStorage("showWeather", false);
       elements.showWeather.checked = showWeather;
       elements.weatherWidget.classList.toggle("active", showWeather);
       if (showWeather) await updateWeather();
 
       // Установка автоматического фона
-      const autoBg = getFromLocalStorage("autoBackground", "false") === "true";
+      const autoBg = getFromLocalStorage("autoBackground", false);
       elements.autoBackground.checked = autoBg;
       if (autoBg) updateAutoBackground();
 
       // Установка анимации цитат
-      const quoteAnim = getFromLocalStorage("quoteAnimation", "true") === "true";
+      const quoteAnim = getFromLocalStorage("quoteAnimation", true);
       elements.quoteAnimation.checked = quoteAnim;
 
       // Установка высокой контрастности
-      const highContrast = getFromLocalStorage("highContrast", "false") === "true";
+      const highContrast = getFromLocalStorage("highContrast", false);
       elements.highContrast.checked = highContrast;
       toggleContrast();
 
       // Установка автосмены поисковой системы
-      const autoEngine = getFromLocalStorage("autoEngine", "false") === "true";
+      const autoEngine = getFromLocalStorage("autoEngine", false);
       elements.autoEngine.checked = autoEngine;
       toggleAutoEngine();
 
       // Установка сохранения поискового запроса
-      const saveSearch = getFromLocalStorage("saveSearch", "false") === "true";
+      const saveSearch = getFromLocalStorage("saveSearch", false);
       elements.saveSearch.checked = saveSearch;
       if (saveSearch) {
         elements.searchInput.value = getFromLocalStorage("searchQuery", "");
       }
 
       // Установка таймера фокуса
-      const showTimer = getFromLocalStorage("focusTimer", "false") === "true";
+      const showTimer = getFromLocalStorage("focusTimer", false);
       elements.focusTimer.checked = showTimer;
       toggleFocusTimer();
 
       // Установка звука клика
-      const clickSound = getFromLocalStorage("clickSound", "false") === "true";
+      const clickSound = getFromLocalStorage("clickSound", false);
       elements.clickSound.checked = clickSound;
 
       // Установка энергосбережения
-      const powerSaving = getFromLocalStorage("powerSaving", "false") === "true";
+      const powerSaving = getFromLocalStorage("powerSaving", false);
       elements.powerSaving.checked = powerSaving;
       togglePowerSaving();
+
+      // Установка открытия в новой вкладке
+      const openNewTab = getFromLocalStorage("openNewTab", true);
+      elements.openNewTab.checked = openNewTab;
 
       // Загрузка фона
       const wp = getFromLocalStorage("wallpaper", null);
@@ -1051,6 +1057,10 @@
         toggleTheme();
       });
 
+      elements.openNewTab.addEventListener("change", (e) => {
+        setToLocalStorage("openNewTab", e.target.checked);
+      });
+
       elements.showQuotes.addEventListener("change", (e) => {
         setToLocalStorage("showQuotes", e.target.checked);
         setQuote();
@@ -1122,6 +1132,7 @@
       });
 
       elements.highContrast.addEventListener("change", (e) => {
+        setToLocalStorage("highContrast", e.target.checked);
         toggleContrast();
       });
 
@@ -1154,6 +1165,7 @@
       });
 
       elements.powerSaving.addEventListener("change", (e) => {
+        setToLocalStorage("powerSaving", e.target.checked);
         togglePowerSaving();
       });
 
