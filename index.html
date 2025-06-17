@@ -3,17 +3,86 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Элегантный поисковик с настраиваемым фоном, цитатами и темами" />
   <title>Элегантный Поисковик</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --primary-bg-opacity: 0.5;
+      --search-bg-opacity: 0.1;
+      --fab-bg-opacity: 0.2;
+      --transition-duration: 0.3s;
+      --bg-color: #000;
+      --text-color: #fff;
+      --search-bg: rgba(255, 255, 255, 0.2);
+      --search-bg-hover: rgba(255, 255, 255, 0.3);
+      --fab-bg: rgba(255, 255, 255, 0.2);
+      --fab-bg-hover: rgba(255, 255, 255, 0.3);
+      --modal-bg: rgba(0, 0, 0, 0.9);
+      --toggle-bg-off: #555;
+      --toggle-bg-on: #4caf50;
+      --toggle-knob: #fff;
+    }
+
+    [data-theme="light"] {
+      --bg-color: #f5f5f5;
+      --text-color: #333;
+      --search-bg: rgba(0, 0, 0, 0.1);
+      --search-bg-hover: rgba(0, 0, 0, 0.2);
+      --fab-bg: rgba(0, 0, 0, 0.2);
+      --fab-bg-hover: rgba(0, 0, 0, 0.3);
+      --modal-bg: rgba(255, 255, 255, 0.9);
+      --toggle-bg-off: #ccc;
+      --toggle-bg-on: #2196f3;
+      --toggle-knob: #fff;
+    }
+
+    [data-contrast="high"] {
+      --text-color: #fff;
+      --bg-color: #000;
+      --search-bg: #333;
+      --search-bg-hover: #444;
+      --fab-bg: #333;
+      --fab-bg-hover: #444;
+      --modal-bg: #222;
+      --toggle-bg-off: #666;
+      --toggle-bg-on: #fff;
+      --toggle-knob: #000;
+    }
+
+    [data-power-saving="true"] {
+      animation: none !important;
+      transition: none !important;
+    }
+
+    /* Стили для черного скроллбара */
+    ::-webkit-scrollbar {
+      width: 12px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #222;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #000;
+      border-radius: 6px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #333;
+    }
+    html {
+      scrollbar-color: #000 #222;
+      scrollbar-width: thin;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
       font-family: 'Roboto', sans-serif;
     }
+
     body {
-      background-color: #000;
+      background-color: var(--bg-color);
       background-size: cover;
       background-position: center;
       min-height: 100vh;
@@ -21,81 +90,189 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      transition: background-image 0.5s ease-in-out;
       position: relative;
+      overflow: hidden;
+      color: var(--text-color);
+      transition: background-color var(--transition-duration), color var(--transition-duration);
     }
+
     body::before {
       content: "";
       position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5);
+      inset: 0;
+      background: rgba(0, 0, 0, var(--primary-bg-opacity));
       z-index: 0;
-      transition: background 0.3s;
+      transition: background var(--transition-duration);
     }
+
     .clock {
       font-size: 3.2rem;
-      color: white;
-      font-weight: bold;
+      font-weight: 700;
       margin-bottom: 5px;
-      position: relative;
+      z-index: 1;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .date {
+      font-size: 1.2rem;
+      color: var(--text-color);
+      opacity: 0.8;
+      margin-bottom: 10px;
       z-index: 1;
     }
+
     .quote {
       font-size: 0.65rem;
-      color: #aaa;
+      color: var(--text-color);
+      opacity: 0.8;
       margin-bottom: 15px;
       max-width: 30%;
       text-align: center;
-      position: relative;
       z-index: 1;
+      line-height: 1.4;
+      transition: opacity 1s ease-in-out;
+      display: none;
     }
+
+    .quote.active {
+      display: block;
+    }
+
+    .quote.animate {
+      opacity: 0;
+      animation: fadeIn 1s ease-in-out forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 0.8; transform: translateY(0); }
+    }
+
     .search-container {
-      width: 90%;
-      max-width: 700px;
+      width: min(90%, 700px);
       backdrop-filter: blur(10px);
-      background-color: rgba(255, 255, 255, 0.1);
+      background: var(--search-bg);
       border-radius: 25px;
       padding: 20px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      position: relative;
       z-index: 1;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     }
+
     .search-bar {
       width: 100%;
       display: flex;
       align-items: center;
       gap: 10px;
     }
+
     .search-bar input {
       flex: 1;
-      padding: 15px;
+      padding: 15px 20px;
       border-radius: 50px;
       border: none;
       font-size: 1.2rem;
-      background-color: rgba(255, 255, 255, 0.2);
-      color: white;
+      background: var(--search-bg);
+      color: var(--text-color);
+      transition: background var(--transition-duration);
     }
+
+    .search-bar input:focus {
+      outline: none;
+      background: var(--search-bg-hover);
+    }
+
     .search-bar input::placeholder {
-      color: #eee;
+      color: var(--text-color);
+      opacity: 0.7;
     }
+
     .engine-icon {
       width: 40px;
       height: 40px;
       border-radius: 50%;
       overflow: hidden;
       cursor: pointer;
+      transition: transform var(--transition-duration);
     }
+
+    .engine-icon:hover {
+      transform: scale(1.1);
+    }
+
     .engine-icon img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: opacity 0.3s ease-in-out;
+      transition: opacity var(--transition-duration);
     }
+
     .engine-icon img.changing {
       opacity: 0;
     }
+
+    .quick-links {
+      display: none;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+      z-index: 1;
+    }
+
+    .quick-links.active {
+      display: flex;
+    }
+
+    .quick-links a {
+      padding: 8px 15px;
+      background: var(--search-bg);
+      border-radius: 20px;
+      color: var(--text-color);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: background var(--transition-duration);
+    }
+
+    .quick-links a:hover {
+      background: var(--search-bg-hover);
+    }
+
+    .weather-widget {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--search-bg);
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      z-index: 1;
+      display: none;
+      backdrop-filter: blur(5px);
+    }
+
+    .weather-widget.active {
+      display: block;
+    }
+
+    .focus-timer {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: var(--search-bg);
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      z-index: 1;
+      display: none;
+      backdrop-filter: blur(5px);
+    }
+
+    .focus-timer.active {
+      display: block;
+    }
+
     .fab {
       position: fixed;
       right: 20px;
@@ -105,82 +282,349 @@
       gap: 15px;
       z-index: 3;
     }
+
     .fab button {
       width: 50px;
       height: 50px;
       border-radius: 50%;
       border: none;
-      background-color: rgba(255,255,255,0.2);
-      color: white;
+      background: var(--fab-bg);
+      color: var(--text-color);
       font-size: 1.5rem;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       backdrop-filter: blur(5px);
+      transition: transform var(--transition-duration), background var(--transition-duration);
     }
+
+    .fab button:hover {
+      transform: scale(1.1);
+      background: var(--fab-bg-hover);
+    }
+
     .settings-modal {
       position: fixed;
-      right: 50%;
-      bottom: 50%;
-      transform: translate(50%, 50%);
-      background: rgba(0,0,0,0.9);
-      padding: 20px;
+      right: 20px;
+      bottom: 100px;
+      background: var(--modal-bg);
+      padding: 25px;
       border-radius: 12px;
       display: none;
       flex-direction: column;
-      gap: 15px;
+      gap: 20px;
       z-index: 5;
+      max-width: 320px;
+      max-height: 80vh;
+      overflow-y: auto;
+      color: var(--text-color);
+      transform: translateY(100%);
+      transition: transform 0.3s ease-in-out;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
+
     .settings-modal.active {
       display: flex;
+      transform: translateY(0);
     }
+
     .settings-modal label {
-      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 1rem;
+      gap: 15px;
+    }
+
+    .settings-modal input[type="checkbox"] {
+      display: none;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 24px;
+      background: var(--toggle-bg-off);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background var(--transition-duration);
+    }
+
+    .toggle-switch::after {
+      content: "";
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: var(--toggle-knob);
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: transform var(--transition-duration);
+    }
+
+    input[type="checkbox"]:checked + .toggle-switch {
+      background: var(--toggle-bg-on);
+    }
+
+    input[type="checkbox"]:checked + .toggle-switch::after {
+      transform: translateX(26px);
+    }
+
+    .settings-modal input[type="range"] {
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .settings-modal select,
+    .settings-modal input[type="text"],
+    .settings-modal input[type="url"] {
+      padding: 8px;
+      border-radius: 5px;
+      background: var(--search-bg);
+      color: var(--text-color);
+      border: none;
+      width: 100%;
       font-size: 0.9rem;
     }
-    .side-menu, .menu-toggle {
-      display: none;
+
+    @media (max-width: 600px) {
+      .clock {
+        font-size: 2rem;
+      }
+
+      .date {
+        font-size: 1rem;
+      }
+
+      .quote {
+        max-width: 80%;
+        font-size: 0.8rem;
+      }
+
+      .search-container {
+        width: 95%;
+        padding: 15px;
+      }
+
+      .search-bar input {
+        font-size: 1rem;
+        padding: 12px;
+      }
+
+      .settings-modal {
+        right: 10px;
+        bottom: 80px;
+        max-width: 90%;
+        padding: 15px;
+      }
+
+      .settings-modal label {
+        font-size: 0.9rem;
+      }
+
+      .weather-widget,
+      .focus-timer {
+        top: 10px;
+        font-size: 0.8rem;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="clock" id="clock">Загрузка времени...</div>
+  <div class="clock" id="clock" aria-live="polite">Загрузка времени...</div>
+  <div class="date" id="date" aria-live="polite">Загрузка даты...</div>
   <div class="quote" id="quote">Загрузка цитаты...</div>
 
   <div class="search-container">
-    <form class="search-bar" id="searchForm">
-      <input type="text" id="searchInput" placeholder="Введите запрос..." autocomplete="off" />
-      <div class="engine-icon" id="engineCycle" role="button" aria-label="Переключить поисковую систему" tabindex="0">
-        <img id="engineIcon" src="https://www.google.com/favicon.ico" alt="Иконка поисковой системы" />
+    <form class="search-bar" id="searchForm" role="search">
+      <input 
+        type="text" 
+        id="searchInput" 
+        placeholder="Введите запрос..." 
+        autocomplete="off" 
+        aria-label="Поисковый запрос"
+      />
+      <div 
+        class="engine-icon" 
+        id="engineCycle" 
+        role="button" 
+        aria-label="Переключить поисковую систему" 
+        tabindex="0"
+      >
+        <img 
+          id="engineIcon" 
+          src="https://www.google.com/favicon.ico" 
+          alt="Иконка текущей поисковой системы" 
+        />
       </div>
     </form>
+    <div class="quick-links" id="quickLinks"></div>
   </div>
+
+  <div class="weather-widget" id="weatherWidget">Загрузка погоды...</div>
+  <div class="focus-timer" id="focusTimer">Таймер: 25:00</div>
 
   <div class="fab">
     <button id="settingsBtn" aria-label="Открыть настройки">⚙️</button>
     <button id="wallpaperBtn" aria-label="Изменить фон">🖼️</button>
+    <button id="themeBtn" aria-label="Переключить тему">🌗</button>
   </div>
 
-  <div class="settings-modal" id="settingsModal">
-    <label><input type="checkbox" id="openNewTab" checked /> Открывать в новой вкладке</label>
+  <div class="settings-modal" id="settingsModal" role="dialog" aria-labelledby="settingsTitle">
+    <h2 id="settingsTitle" style="display: none;">Настройки</h2>
+    <label>
+      Открывать в новой вкладке
+      <input type="checkbox" id="openNewTab" checked aria-label="Открывать результаты поиска в новой вкладке" />
+      <span class="toggle-switch"></span>
+    </label>
+    <label>
+      Показывать цитаты
+      <input type="checkbox" id="showQuotes" checked aria-label="Показывать цитаты" />
+      <span class="toggle-switch"></span>
+    </label>
+    <label>
+      Язык цитат:
+      <select id="quoteLanguage" aria-label="Выбор языка цитат">
+        <option value="ru">Русский</option>
+        <option value="en">Английский</option>
+      </select>
+    </label>
+    <label>
+      Прозрачность фона:
+      <input 
+        type="range" 
+        id="bgOpacity" 
+        min="0" 
+        max="0.9" 
+        step="0.1" 
+        value="0.5" 
+        aria-label="Регулировка прозрачности фона"
+      />
+    </label>
+    <label>
+      Формат времени:
+      <select id="timeFormat" aria-label="Выбор формата времени">
+        <option value="24">24-часовой</option>
+        <option value="12">12-часовой</option>
+      </select>
+    </label>
+    <label>
+      Своя цитата:
+      <input 
+        type="text" 
+        id="customQuote" 
+        placeholder="Введите свою цитату..." 
+        aria-label="Ввод пользовательской цитаты"
+      />
+    </label>
+    <label>
+      Добавить ссылку:
+      <input 
+        type="text" 
+        id="linkName" 
+        placeholder="Название ссылки..." 
+        aria-label="Название новой ссылки"
+      />
+      <input 
+        type="url" 
+        id="linkUrl" 
+        placeholder="URL ссылки..." 
+        aria-label="URL новой ссылки"
+      />
+    </label>
+    <label>
+      Автофон по времени суток
+      <input type="checkbox" id="autoBackground" aria-label="Автоматическая смена фона по времени суток" />
+      <span class="toggle-switch"></span>
+    </label>
+    <label>
+      Анимация цитаты
+      <input type="checkbox" id="quoteAnimation" checked aria-label="Включить анимацию цитаты" />
+      <span class="toggle-switch"></span>
+    </label>
+    <label>
+      Быстрые ссылки
+      <input type="checkbox" id="showQuickLinks" aria-label="Показывать быстрые ссылки" />
+      <span class="toggle-switch"></span>
+    </label>
+    <label>
+      Показывать погоду
+      <input type="checkbox" id="showWeather" aria-label="Показывать погоду" />
+      <span class="toggle-switch"></span>
+    </label>
+    <label>
+      Высокая контрастность
+      <input type="checkbox" id="highContrast" aria-label="Режим высокой контрастности" />
+      <span class="toggle-switch"></span>
+    </label>
+    <label>
+      Автосмена поисковой системы
+      <input type="checkbox" id="autoEngine" aria-label="Автосмена поисковой системы" />
+      <span class="toggle-switch"></span>
+    </label>
+    <label>
+      Сохранять поисковый запрос
+      <input type="checkbox" id="saveSearch" aria-label="Сохранять поисковый запрос" />
+      <span class="toggle-switch"></span>
+    </label>
+    <label>
+      Таймер фокуса
+      <input type="checkbox" id="focusTimer" aria-label="Показывать таймер фокуса" />
+      <span class="toggle-switch"></span>
+    </label>
+    <label>
+      Звук клика
+      <input type="checkbox" id="clickSound" aria-label="Включить звук клика" />
+      <span class="toggle-switch"></span>
+    </label>
+    <label>
+      Режим энергосбережения
+      <input type="checkbox" id="powerSaving" aria-label="Режим энергосбережения" />
+      <span class="toggle-switch"></span>
+    </label>
   </div>
 
-  <input type="file" id="bg-input" accept="image/jpeg,image/png,video/mp4,video/webm" style="display:none" />
+  <input type="file" id="bg-input" accept="image/jpeg,image/png,video/mp4,video/webm" style="display: none" />
+  <audio id="clickSound" src="https://freesound.org/data/previews/612/612095_5674468-lq.mp3"></audio>
 
   <script>
-    const clockEl = document.getElementById("clock");
-    const quoteEl = document.getElementById("quote");
-    const settingsBtn = document.getElementById("settingsBtn");
-    const settingsModal = document.getElementById("settingsModal");
-    const wallpaperBtn = document.getElementById("wallpaperBtn");
-    const bgInput = document.getElementById("bg-input");
-    const openNewTab = document.getElementById("openNewTab");
-    const searchInput = document.getElementById("searchInput");
-    const searchForm = document.getElementById("searchForm");
-    const engineIcon = document.getElementById("engineIcon");
-    const engineCycle = document.getElementById("engineCycle");
-    let inactivityTimeout;
+    // Константы и элементы DOM
+    const elements = {
+      clock: document.getElementById("clock"),
+      date: document.getElementById("date"),
+      quote: document.getElementById("quote"),
+      settingsBtn: document.getElementById("settingsBtn"),
+      settingsModal: document.getElementById("settingsModal"),
+      wallpaperBtn: document.getElementById("wallpaperBtn"),
+      themeBtn: document.getElementById("themeBtn"),
+      bgInput: document.getElementById("bg-input"),
+      openNewTab: document.getElementById("openNewTab"),
+      showQuotes: document.getElementById("showQuotes"),
+      quoteLanguage: document.getElementById("quoteLanguage"),
+      bgOpacity: document.getElementById("bgOpacity"),
+      timeFormat: document.getElementById("timeFormat"),
+      customQuote: document.getElementById("customQuote"),
+      linkName: document.getElementById("linkName"),
+      linkUrl: document.getElementById("linkUrl"),
+      autoBackground: document.getElementById("autoBackground"),
+      quoteAnimation: document.getElementById("quoteAnimation"),
+      showQuickLinks: document.getElementById("showQuickLinks"),
+      showWeather: document.getElementById("showWeather"),
+      highContrast: document.getElementById("highContrast"),
+      autoEngine: document.getElementById("autoEngine"),
+      saveSearch: document.getElementById("saveSearch"),
+      focusTimer: document.getElementById("focusTimer"),
+      clickSound: document.getElementById("clickSound"),
+      powerSaving: document.getElementById("powerSaving"),
+      searchInput: document.getElementById("searchInput"),
+      searchForm: document.getElementById("searchForm"),
+      engineIcon: document.getElementById("engineIcon"),
+      engineCycle: document.getElementById("engineCycle"),
+      quickLinks: document.getElementById("quickLinks"),
+      weatherWidget: document.getElementById("weatherWidget"),
+      focusTimerDisplay: document.getElementById("focusTimer")
+    };
 
     const engines = [
       { name: "Google", url: "https://www.google.com/search?q=", icon: "https://www.google.com/favicon.ico" },
@@ -189,9 +633,42 @@
       { name: "DuckDuckGo", url: "https://duckduckgo.com/?q=", icon: "https://duckduckgo.com/favicon.ico" }
     ];
 
+    const quotes = {
+      ru: [
+        "Мечтай.", "Будь собой.", "Шанс каждый день.", "Меняйся.", "Начни с малого.",
+        "Будь смелым.", "Действуй.", "Верь в себя.", "Начни.", "Ты важен."
+      ],
+      en: [
+        "Dream big.", "Be yourself.", "Seize the day.", "Embrace change.", "Start small.",
+        "Be brave.", "Take action.", "Believe in yourself.", "Begin now.", "You matter."
+      ]
+    };
+
+    const defaultBackgrounds = {
+      morning: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80",
+      day: "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80",
+      evening: "https://images.unsplash.com/photo-1503435980610-a51f3ddfee50?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80",
+      night: "https://images.unsplash.com/photo-1475274047050-1d0c0975c63e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80"
+    };
+
+    const defaultLinks = [
+      { name: "YouTube", url: "https://www.youtube.com" },
+      { name: "ChatGPT", url: "https://chat.openai.com" },
+      { name: "GitHub", url: "https://github.com" }
+    ];
+
+    let currentEngine = parseInt(getFromLocalStorage("engineIndex", 0)) || 0;
+    let inactivityTimeout;
+    let customQuotes = JSON.parse(getFromLocalStorage("customQuotes", "[]")) || [];
+    let customLinks = JSON.parse(getFromLocalStorage("customLinks", JSON.stringify(defaultLinks))) || defaultLinks;
+    let autoEngineInterval;
+    let focusTimerInterval;
+    let focusTime = 25 * 60; // 25 минут в секундах
+
+    // Утилиты для работы с localStorage
     function getFromLocalStorage(key, defaultValue) {
       try {
-        return localStorage.getItem(key) || defaultValue;
+        return localStorage.getItem(key) ?? defaultValue;
       } catch (e) {
         console.warn("localStorage недоступен:", e);
         return defaultValue;
@@ -200,158 +677,532 @@
 
     function setToLocalStorage(key, value) {
       try {
-        localStorage.setItem(key, value);
+        localStorage.setItem(key, JSON.stringify(value));
       } catch (e) {
         console.warn("Не удалось сохранить в localStorage:", e);
       }
     }
 
-    let currentEngine = parseInt(getFromLocalStorage("engineIndex", 0));
-    engineIcon.src = engines[currentEngine].icon;
+    // Обновление часов и даты
+    function updateClockAndDate() {
+      const now = new Date();
+      const timeFormat = getFromLocalStorage("timeFormat", "24");
+      elements.clock.textContent = now.toLocaleTimeString('ru-RU', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: timeFormat === "12"
+      });
+      elements.date.textContent = now.toLocaleDateString('ru-RU', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    }
 
+    // Установка цитаты
+    function setQuote() {
+      if (!elements.showQuotes.checked) {
+        elements.quote.classList.remove("active");
+        return;
+      }
+      const lang = getFromLocalStorage("quoteLanguage", "ru");
+      const allQuotes = [...quotes[lang], ...customQuotes];
+      elements.quote.textContent = allQuotes[Math.floor(Math.random() * allQuotes.length)] || "Цитата не выбрана";
+      elements.quote.classList.add("active");
+      if (elements.quoteAnimation.checked) {
+        elements.quote.classList.add("animate");
+        setTimeout(() => elements.quote.classList.remove("animate"), 1000);
+      }
+    }
+
+    // Обновление быстрых ссылок
+    function updateQuickLinks() {
+      elements.quickLinks.innerHTML = "";
+      customLinks.forEach(link => {
+        const a = document.createElement("a");
+        a.href = link.url;
+        a.textContent = link.name;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        elements.quickLinks.appendChild(a);
+      });
+    }
+
+    // Получение погоды
+    async function updateWeather() {
+      try {
+        // Получение геолокации по IP
+        const geoResponse = await fetch("http://ip-api.com/json/");
+        const geoData = await geoResponse.json();
+        const { lat, lon, city } = geoData;
+
+        // Получение погоды
+        const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+        const weatherData = await weatherResponse.json();
+        const temp = Math.round(weatherData.current_weather.temperature);
+        const weatherCode = weatherData.current_weather.weathercode;
+        const weatherDesc = {
+          0: "ясно", 1: "почти ясно", 2: "облачно", 3: "пасмурно",
+          45: "туман", 51: "морось", 61: "дождь", 71: "снег"
+        }[weatherCode] || "неизвестно";
+
+        elements.weatherWidget.textContent = `${city}: ${temp}°C, ${weatherDesc}`;
+      } catch (e) {
+        console.warn("Ошибка получения погоды:", e);
+        elements.weatherWidget.textContent = "Погода недоступна";
+      }
+    }
+
+    // Обновление поисковой системы
     function cycleEngine() {
-      engineIcon.classList.add("changing");
+      elements.engineIcon.classList.add("changing");
       currentEngine = (currentEngine + 1) % engines.length;
       setTimeout(() => {
-        engineIcon.src = engines[currentEngine].icon;
-        engineIcon.classList.remove("changing");
+        elements.engineIcon.src = engines[currentEngine].icon;
+        elements.engineIcon.alt = `Иконка ${engines[currentEngine].name}`;
+        elements.engineIcon.classList.remove("changing");
       }, 300);
       setToLocalStorage("engineIndex", currentEngine);
     }
 
-    engineCycle.addEventListener("click", cycleEngine);
-    engineCycle.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        cycleEngine();
+    // Настройка автосмены поисковой системы
+    function toggleAutoEngine() {
+      if (elements.autoEngine.checked) {
+        autoEngineInterval = setInterval(cycleEngine, 600000); // 10 минут
+      } else {
+        clearInterval(autoEngineInterval);
       }
-    });
-
-    function updateClock() {
-      clockEl.textContent = new Date().toLocaleTimeString();
     }
-    setInterval(updateClock, 1000);
-    updateClock();
 
-    const quotes = [
-      "Мечтай.", "Будь собой.", "Шанс каждый день.", "Меняйся.", "Начни с малого.",
-      "Будь смелым.", "Действуй.", "Верь в себя.", "Начни.", "Ты важен.",
-      "Стань лучше.", "Будь добрым.", "Люби жизнь.", "Рискуй.", "Найди путь."
-    ];
-    quoteEl.textContent = quotes[Math.floor(Math.random() * quotes.length)];
+    // Настройка таймера фокуса
+    function toggleFocusTimer() {
+      if (elements.focusTimer.checked) {
+        elements.focusTimerDisplay.classList.add("active");
+        focusTime = 25 * 60;
+        clearInterval(focusTimerInterval);
+        focusTimerInterval = setInterval(() => {
+          focusTime--;
+          const minutes = Math.floor(focusTime / 60);
+          const seconds = focusTime % 60;
+          elements.focusTimerDisplay.textContent = `Таймер: ${minutes}:${seconds.toString().padStart(2, "0")}`;
+          if (focusTime <= 0) {
+            clearInterval(focusTimerInterval);
+            alert("Время фокуса завершено! Отдохните 5 минут.");
+            focusTime = 25 * 60;
+            toggleFocusTimer();
+          }
+        }, 1000);
+      } else {
+        elements.focusTimerDisplay.classList.remove("active");
+        clearInterval(focusTimerInterval);
+      }
+    }
 
+    // Воспроизведение звука клика
+    function playClickSound() {
+      if (elements.clickSound.checked) {
+        const audio = document.getElementById("clickSound");
+        audio.currentTime = 0;
+        audio.play().catch(e => console.warn("Ошибка воспроизведения звука:", e));
+      }
+    }
+
+    // Настройка видео фона
     function setupVideo(video, src) {
       video.src = src;
-      video.play().catch((e) => {
-        console.warn("Не удалось автоматически воспроизвести видео:", e);
-      });
+      video.play().catch((e) => console.warn("Не удалось воспроизвести видео:", e));
     }
 
-    wallpaperBtn.addEventListener("click", () => bgInput.click());
-
-    bgInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const validImageTypes = ["image/jpeg", "image/png"];
-      const validVideoTypes = ["video/mp4", "video/webm"];
-      if (!validImageTypes.includes(file.type) && !validVideoTypes.includes(file.type)) {
-        alert("Пожалуйста, выберите файл в формате JPEG, PNG, MP4 или WebM.");
-        bgInput.value = "";
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64Data = reader.result;
-        if (file.type.startsWith("video")) {
-          document.body.style.backgroundImage = "none";
-          let video = document.querySelector("#bg-video");
-          if (!video) {
-            video = document.createElement("video");
-            video.id = "bg-video";
-            video.autoplay = true;
-            video.loop = true;
-            video.muted = true;
-            video.style.position = "fixed";
-            video.style.top = 0;
-            video.style.left = 0;
-            video.style.width = "100%";
-            video.style.height = "100%";
-            video.style.objectFit = "cover";
-            video.style.zIndex = "-1";
-            document.body.appendChild(video);
-          }
-          setupVideo(video, base64Data);
-        } else {
-          document.body.style.backgroundImage = `url(${base64Data})`;
-          const existing = document.querySelector("#bg-video");
-          if (existing) existing.remove();
-        }
-        setToLocalStorage("wallpaper", base64Data);
-        setToLocalStorage("wallpaperType", file.type);
-        bgInput.value = "";
-      };
-      reader.readAsDataURL(file);
-    });
-
-    settingsBtn.addEventListener("click", () => {
-      settingsModal.classList.toggle("active");
-      if (settingsModal.classList.contains("active")) {
-        resetInactivityTimeout();
-      } else {
-        clearTimeout(inactivityTimeout);
-      }
-    });
-
-    function resetInactivityTimeout() {
-      clearTimeout(inactivityTimeout);
-      inactivityTimeout = setTimeout(() => {
-        settingsModal.classList.remove("active");
-      }, 10000);
+    // Автоматическая смена фона
+    function updateAutoBackground() {
+      if (!elements.autoBackground.checked) return;
+      const hour = new Date().getHours();
+      let period;
+      if (hour >= 5 && hour < 12) period = "morning";
+      else if (hour >= 12 && hour < 17) period = "day";
+      else if (hour >= 17 && hour < 22) period = "evening";
+      else period = "night";
+      document.body.style.backgroundImage = `url(${defaultBackgrounds[period]})`;
+      document.querySelector("#bg-video")?.remove();
+      setToLocalStorage("wallpaper", defaultBackgrounds[period]);
+      setToLocalStorage("wallpaperType", "image/jpeg");
     }
 
-    settingsModal.addEventListener("mousemove", resetInactivityTimeout);
-    settingsModal.addEventListener("keydown", resetInactivityTimeout);
+    // Переключение темы
+    function toggleTheme() {
+      const currentTheme = document.body.dataset.theme === "light" ? "dark" : "light";
+      document.body.dataset.theme = currentTheme;
+      setToLocalStorage("theme", currentTheme);
+    }
 
-    searchForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const query = searchInput.value.trim();
-      if (query) {
-        const target = engines[currentEngine].url + encodeURIComponent(query);
-        if (openNewTab.checked) {
-          window.open(target, "_blank");
-        } else {
-          window.location.href = target;
-        }
-        searchInput.value = "";
+    // Переключение контрастности
+    function toggleContrast() {
+      document.body.dataset.contrast = elements.highContrast.checked ? "high" : "normal";
+      setToLocalStorage("highContrast", elements.highContrast.checked);
+    }
+
+    // Переключение энергосбережения
+    function togglePowerSaving() {
+      document.body.dataset.powerSaving = elements.powerSaving.checked ? "true" : "false";
+      setToLocalStorage("powerSaving", elements.powerSaving.checked);
+      if (elements.powerSaving.checked) {
+        document.querySelector("#bg-video")?.remove();
+        document.body.style.backgroundImage = "none";
       }
-    });
+    }
 
-    window.addEventListener("load", () => {
+    // Инициализация
+    async function initialize() {
+      // Установка начальной поисковой системы
+      elements.engineIcon.src = engines[currentEngine].icon;
+      elements.engineIcon.alt = `Иконка ${engines[currentEngine].name}`;
+
+      // Установка темы
+      const savedTheme = getFromLocalStorage("theme", window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.body.dataset.theme = savedTheme;
+
+      // Установка цитат
+      const showQuotes = getFromLocalStorage("showQuotes", "true") === "true";
+      elements.showQuotes.checked = showQuotes;
+      const lang = getFromLocalStorage("quoteLanguage", "ru");
+      elements.quoteLanguage.value = lang;
+      setQuote();
+
+      // Установка прозрачности фона
+      const opacity = getFromLocalStorage("bgOpacity", "0.5");
+      document.documentElement.style.setProperty("--primary-bg-opacity", opacity);
+      elements.bgOpacity.value = opacity;
+
+      // Установка формата времени
+      const timeFormat = getFromLocalStorage("timeFormat", "24");
+      elements.timeFormat.value = timeFormat;
+
+      // Установка пользовательских цитат
+      elements.customQuote.value = "";
+
+      // Установка быстрых ссылок
+      const showLinks = getFromLocalStorage("showQuickLinks", "false") === "true";
+      elements.showQuickLinks.checked = showLinks;
+      elements.quickLinks.classList.toggle("active", showLinks);
+      updateQuickLinks();
+
+      // Установка погоды
+      const showWeather = getFromLocalStorage("showWeather", "false") === "true";
+      elements.showWeather.checked = showWeather;
+      elements.weatherWidget.classList.toggle("active", showWeather);
+      if (showWeather) await updateWeather();
+
+      // Установка автоматического фона
+      const autoBg = getFromLocalStorage("autoBackground", "false") === "true";
+      elements.autoBackground.checked = autoBg;
+      if (autoBg) updateAutoBackground();
+
+      // Установка анимации цитат
+      const quoteAnim = getFromLocalStorage("quoteAnimation", "true") === "true";
+      elements.quoteAnimation.checked = quoteAnim;
+
+      // Установка высокой контрастности
+      const highContrast = getFromLocalStorage("highContrast", "false") === "true";
+      elements.highContrast.checked = highContrast;
+      toggleContrast();
+
+      // Установка автосмены поисковой системы
+      const autoEngine = getFromLocalStorage("autoEngine", "false") === "true";
+      elements.autoEngine.checked = autoEngine;
+      toggleAutoEngine();
+
+      // Установка сохранения поискового запроса
+      const saveSearch = getFromLocalStorage("saveSearch", "false") === "true";
+      elements.saveSearch.checked = saveSearch;
+      if (saveSearch) {
+        elements.searchInput.value = getFromLocalStorage("searchQuery", "");
+      }
+
+      // Установка таймера фокуса
+      const showTimer = getFromLocalStorage("focusTimer", "false") === "true";
+      elements.focusTimer.checked = showTimer;
+      toggleFocusTimer();
+
+      // Установка звука клика
+      const clickSound = getFromLocalStorage("clickSound", "false") === "true";
+      elements.clickSound.checked = clickSound;
+
+      // Установка энергосбережения
+      const powerSaving = getFromLocalStorage("powerSaving", "false") === "true";
+      elements.powerSaving.checked = powerSaving;
+      togglePowerSaving();
+
+      // Загрузка фона
       const wp = getFromLocalStorage("wallpaper", null);
       const wpType = getFromLocalStorage("wallpaperType", null);
-      if (wp && wpType) {
+      if (wp && wpType && !autoBg && !powerSaving) {
         if (wpType.startsWith("video")) {
           const video = document.createElement("video");
-          video.id = "bg-video";
-          video.autoplay = true;
-          video.loop = true;
-          video.muted = true;
-          video.style.position = "fixed";
-          video.style.top = 0;
-          video.style.left = 0;
-          video.style.width = "100%";
-          video.style.height = "100%";
-          video.style.objectFit = "cover";
-          video.style.zIndex = "-1";
+          Object.assign(video, {
+            id: "bg-video",
+            autoplay: true,
+            loop: true,
+            muted: true,
+            style: `
+              position: fixed;
+              inset: 0;
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+              z-index: -1;
+            `
+          });
           document.body.appendChild(video);
           setupVideo(video, wp);
         } else {
           document.body.style.backgroundImage = `url(${wp})`;
         }
       }
-    });
+
+      // Инициализация часов и даты
+      updateClockAndDate();
+      setInterval(updateClockAndDate, 1000);
+      if (autoBg) setInterval(updateAutoBackground, 60000);
+    }
+
+    // Обработчики событий
+    function setupEventListeners() {
+      elements.engineCycle.addEventListener("click", () => {
+        playClickSound();
+        cycleEngine();
+      });
+      elements.engineCycle.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          playClickSound();
+          cycleEngine();
+        }
+      });
+
+      elements.wallpaperBtn.addEventListener("click", () => {
+        playClickSound();
+        elements.bgInput.click();
+      });
+
+      elements.bgInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const validTypes = ["image/jpeg", "image/png", "video/mp4", "video/webm"];
+        if (!validTypes.includes(file.type)) {
+          alert("Выберите файл в формате JPEG, PNG, MP4 или WebM.");
+          elements.bgInput.value = "";
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64Data = reader.result;
+          elements.autoBackground.checked = false;
+          setToLocalStorage("autoBackground", false);
+          if (file.type.startsWith("video") && !elements.powerSaving.checked) {
+            document.body.style.backgroundImage = "none";
+            let video = document.querySelector("#bg-video");
+            if (!video) {
+              video = document.createElement("video");
+              Object.assign(video, {
+                id: "bg-video",
+                autoplay: true,
+                loop: true,
+                muted: true,
+                style: `
+                  position: fixed;
+                  inset: 0;
+                  width: 100%;
+                  height: 100%;
+                  object-fit: cover;
+                  z-index: -1;
+                `
+              });
+              document.body.appendChild(video);
+            }
+            setupVideo(video, base64Data);
+          } else {
+            document.body.style.backgroundImage = `url(${base64Data})`;
+            document.querySelector("#bg-video")?.remove();
+          }
+          setToLocalStorage("wallpaper", base64Data);
+          setToLocalStorage("wallpaperType", file.type);
+          elements.bgInput.value = "";
+        };
+        reader.readAsDataURL(file);
+      });
+
+      elements.settingsBtn.addEventListener("click", () => {
+        playClickSound();
+        elements.settingsModal.classList.toggle("active");
+        if (elements.settingsModal.classList.contains("active")) {
+          resetInactivityTimeout();
+          elements.openNewTab.focus();
+        } else {
+          clearTimeout(inactivityTimeout);
+        }
+      });
+
+      elements.themeBtn.addEventListener("click", () => {
+        playClickSound();
+        toggleTheme();
+      });
+
+      elements.showQuotes.addEventListener("change", (e) => {
+        setToLocalStorage("showQuotes", e.target.checked);
+        setQuote();
+      });
+
+      elements.quoteLanguage.addEventListener("change", (e) => {
+        setToLocalStorage("quoteLanguage", e.target.value);
+        setQuote();
+      });
+
+      elements.bgOpacity.addEventListener("input", (e) => {
+        document.documentElement.style.setProperty("--primary-bg-opacity", e.target.value);
+        setToLocalStorage("bgOpacity", e.target.value);
+      });
+
+      elements.timeFormat.addEventListener("change", (e) => {
+        setToLocalStorage("timeFormat", e.target.value);
+        updateClockAndDate();
+      });
+
+      elements.customQuote.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && elements.customQuote.value.trim()) {
+          customQuotes.push(elements.customQuote.value.trim());
+          setToLocalStorage("customQuotes", customQuotes);
+          setQuote();
+          elements.customQuote.value = "";
+        }
+      });
+
+      elements.linkName.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && elements.linkName.value.trim() && elements.linkUrl.value.trim()) {
+          customLinks.push({ name: elements.linkName.value.trim(), url: elements.linkUrl.value.trim() });
+          setToLocalStorage("customLinks", customLinks);
+          updateQuickLinks();
+          elements.linkName.value = "";
+          elements.linkUrl.value = "";
+        }
+      });
+
+      elements.linkUrl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && elements.linkName.value.trim() && elements.linkUrl.value.trim()) {
+          customLinks.push({ name: elements.linkName.value.trim(), url: elements.linkUrl.value.trim() });
+          setToLocalStorage("customLinks", customLinks);
+          updateQuickLinks();
+          elements.linkName.value = "";
+          elements.linkUrl.value = "";
+        }
+      });
+
+      elements.autoBackground.addEventListener("change", (e) => {
+        setToLocalStorage("autoBackground", e.target.checked);
+        if (e.target.checked) updateAutoBackground();
+      });
+
+      elements.quoteAnimation.addEventListener("change", (e) => {
+        setToLocalStorage("quoteAnimation", e.target.checked);
+        setQuote();
+      });
+
+      elements.showQuickLinks.addEventListener("change", (e) => {
+        setToLocalStorage("showQuickLinks", e.target.checked);
+        elements.quickLinks.classList.toggle("active", e.target.checked);
+      });
+
+      elements.showWeather.addEventListener("change", async (e) => {
+        setToLocalStorage("showWeather", e.target.checked);
+        elements.weatherWidget.classList.toggle("active", e.target.checked);
+        if (e.target.checked) await updateWeather();
+      });
+
+      elements.highContrast.addEventListener("change", (e) => {
+        toggleContrast();
+      });
+
+      elements.autoEngine.addEventListener("change", (e) => {
+        setToLocalStorage("autoEngine", e.target.checked);
+        toggleAutoEngine();
+      });
+
+      elements.saveSearch.addEventListener("change", (e) => {
+        setToLocalStorage("saveSearch", e.target.checked);
+        if (!e.target.checked) {
+          setToLocalStorage("searchQuery", "");
+          elements.searchInput.value = "";
+        }
+      });
+
+      elements.searchInput.addEventListener("input", () => {
+        if (elements.saveSearch.checked) {
+          setToLocalStorage("searchQuery", elements.searchInput.value);
+        }
+      });
+
+      elements.focusTimer.addEventListener("change", (e) => {
+        setToLocalStorage("focusTimer", e.target.checked);
+        toggleFocusTimer();
+      });
+
+      elements.clickSound.addEventListener("change", (e) => {
+        setToLocalStorage("clickSound", e.target.checked);
+      });
+
+      elements.powerSaving.addEventListener("change", (e) => {
+        togglePowerSaving();
+      });
+
+      elements.settingsModal.addEventListener("mousemove", resetInactivityTimeout);
+      elements.settingsModal.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          elements.settingsModal.classList.remove("active");
+          clearTimeout(inactivityTimeout);
+        }
+        resetInactivityTimeout();
+      });
+
+      elements.searchForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const query = elements.searchInput.value.trim();
+        if (query) {
+          const target = engines[currentEngine].url + encodeURIComponent(query);
+          if (elements.openNewTab.checked) {
+            window.open(target, "_blank", "noopener,noreferrer");
+          } else {
+            window.location.href = target;
+          }
+          if (!elements.saveSearch.checked) {
+            elements.searchInput.value = "";
+          }
+        }
+      });
+
+      // Горячие клавиши
+      document.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "t") {
+          e.preventDefault();
+          playClickSound();
+          cycleEngine();
+        }
+      });
+    }
+
+    // Управление таймером неактивности
+    function resetInactivityTimeout() {
+      clearTimeout(inactivityTimeout);
+      inactivityTimeout = setTimeout(() => {
+        elements.settingsModal.classList.remove("active");
+      }, 10000);
+    }
+
+    // Запуск приложения
+    initialize();
+    setupEventListeners();
   </script>
 </body>
 </html>
